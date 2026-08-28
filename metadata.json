@@ -1,0 +1,6 @@
+{
+  "name": "EcoCart",
+  "description": "AI Sustainability Layer for Online Shopping. Instantly analyze products for sustainability scores, carbon footprint, greenwashing risks, and eco-friendly alternatives.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
