@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EcoCart Popup</title>
+  <style>
+    body {
+      width: 340px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #0A0F14;
+      color: #F8FAFC;
+    }
+    .container {
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #22C55E, #14B8A6);
+      color: #0A0F14;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, #22C55E, #14B8A6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .score-circle {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .circle-outer {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 3px solid #22C55E;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 197, 94, 0.03);
+    }
+    .numeric-score {
+      font-size: 32px;
+      font-weight: 800;
+      color: #22C55E;
+    }
+    .score-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #64748B;
+      letter-spacing: 0.05em;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #64748B;
+      margin: 0 0 8px 0;
+      letter-spacing: 0.05em;
+    }
+    .metric-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge-teal {
+      background-color: rgba(20, 184, 166, 0.15);
+      color: #2DD4BF;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .badge-green {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #4ADE80;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .recommendation {
+      font-size: 12px;
+      line-height: 1.4;
+      color: #CBD5E1;
+      margin: 0;
+    }
+    .status-text {
+      text-align: center;
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 16px;
+    }
+    .btn-action {
+      background-color: #22C55E;
+      color: #0A0F14;
+      border: none;
+      border-radius: 6px;
+      width: 100%;
+      padding: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .btn-action:hover {
+      background-color: #4ADE80;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-badge">ECO</div>
+      <h1 class="title">EcoCart</h1>
+    </div>
+    
+    <div class="score-circle">
+      <div class="circle-outer">
+        <span class="numeric-score">92</span>
+        <span class="score-label">EcoScore</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Active Product Analysis</h3>
+      <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #F8FAFC;">
+        Patagonia Recycled Fleece
+      </div>
+      <div class="metric-flex" style="margin-bottom: 6px;">
+        <span style="font-size: 12px; color: #94A3B8;">Carbon Impact:</span>
+        <span class="badge-teal">8.5 kg CO2e (Low)</span>
+      </div>
+      <div class="metric-flex">
+        <span style="font-size: 12px; color: #94A3B8;">Greenwash Risk:</span>
+        <span class="badge-green">Low Risk (Verified)</span>
+      </div>
+    </div>
+
+    <button id="viewBtn" class="btn-action">EcoCart Active</button>
+    
+    <div class="status-text">
+      Actively auditing product carbon impacts and ratings.
+    </div>
+  </div>
+</body>
+</html>
