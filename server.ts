@@ -36,270 +36,374 @@ if (apiKey) {
 
 // 1. API: Product Sustainability Analysis
 app.post("/api/analyze", async (req, res) => {
-  const { productName } = req.body;
+  try {
+    const { productName } = req.body;
 
-  if (!productName || typeof productName !== "string") {
-    return res.status(400).json({ error: "Product name is required" });
-  }
-
-  // Pre-configured rich sandbox mock metrics as a high-fidelity fallback
-  const mockDatabase: Record<string, any> = {
-    "patagonia synchilla fleece": {
-      productName: "Patagonia Synchilla Fleece Jacket",
-      ecoScore: 92,
-      carbonKg: 8.5,
-      carbonLevel: "Low",
-      greenwashingRisk: "Low",
-      greenwashingDetails: "Patagonia's claims are fully backed by independent certifications. The product is made of 100% recycled polyester processed in Fair Trade certified factories. Supply chain transparency is exceptionally high.",
-      highlights: [
-        "100% Recycled Polyester fleece fiber source",
-        "Fair Trade Certified sewing for ethical labor conditions",
-        "Worn Wear program eligible for lifetime repairs",
-        "Bluesign certified material processing"
-      ],
-      insights: [
-        "Saves water and reduces CO2 emissions by approximately 30% compared to virgin polyester imports.",
-        "Constructed with mechanical recycling processes which completely avoid petrochemical synthesizing.",
-        "Contains heavy-duty zippers built for long durability, which significantly lowers overall lifecycle waste."
-      ],
-      alternatives: [
-        { name: "Cotopaxi Teca Fleece", brand: "Cotopaxi", ecoScore: 89, carbonKg: 9.1, whyBetter: "Uses remaining stock/recycled fleece fabrics, helping clean up landfill surpluses in clothing factories." },
-        { name: "EcoOuter recycled wool pullover", brand: "EcoOuter", ecoScore: 94, carbonKg: 6.2, whyBetter: "Swapping synthetic fleece for organic recycled wool cuts down synthetic microplastic shedding by 100%." }
-      ]
-    },
-    "h&m polyester t-shirt": {
-      productName: "H&M Standard Polyester T-Shirt",
-      ecoScore: 32,
-      carbonKg: 24.2,
-      carbonLevel: "High",
-      greenwashingRisk: "High",
-      greenwashingDetails: "Strong greenwashing indications detected. Frequently marketed as 'Conscious' or containing recycled content, yet the product materials contain over 80% virgin synthetics without detailed origin certificates or carbon offset auditing.",
-      highlights: [
-        "85% Virgin Synthetic Polyester fiber",
-        "Disposable fast-fashion framework with low lifecycle durability",
-        "Heavy chemical sizing and synthetic dye usage",
-        "No microplastic shedding prevention safeguards"
-      ],
-      insights: [
-        "High reliance on petrochemical extraction, yielding nearly triples the carbon footprint compared to organic cotton counterparts.",
-        "Synthetic blend structure prevents post-consumer mechanical fiber sorting, making the product highly non-recyclable.",
-        "Estimated longevity of less than 15 washes due to light knit tension and high elasticity decay."
-      ],
-      alternatives: [
-        { name: "Organic Cotton Heritage Tee", brand: "Organic Basics", ecoScore: 95, carbonKg: 4.1, whyBetter: "100% organic cotton, 85% less chemicals, zero synthetic microplastics, fully compostable." },
-        { name: "Refined Hemp Daily Crew", brand: "Jungmaven", ecoScore: 91, carbonKg: 3.8, whyBetter: "Made from natural woody fibers that sequester carbon from the atmosphere and require zero irrigation or pesticides." }
-      ]
-    },
-    "apple iphone 15 pro": {
-      productName: "Apple iPhone 15 Pro (128GB)",
-      ecoScore: 78,
-      carbonKg: 66,
-      carbonLevel: "Medium",
-      greenwashingRisk: "Low",
-      greenwashingDetails: "Apple's environmental report provides reliable documentation verified by third-party auditors. Over 25% recycled materials used overall (including 100% recycled gold, cobalt, and copper), and carbon claims match exact logistics offsets.",
-      highlights: [
-        "100% Recycled Cobalt in the battery cell",
-        "75% Recycled Aluminum in the internal chassis structure",
-        "Packaging is 99% fiber-based and plastic-free",
-        "Produced using 100% clean green manufacturing electricity"
-      ],
-      insights: [
-        "Carbon footprint is slightly lowered from prior models due to substantial increases in clean grid operation offsets by manufacturing partners.",
-        "Main environmental cost stems from semiconductor cleanroom manufacturing and global shipping.",
-        "Highly modular recycling is possible at designated Apple disassembly robots, though self-repair remains moderately difficult."
-      ],
-      alternatives: [
-        { name: "Fairphone 5", brand: "Fairphone", ecoScore: 96, carbonKg: 42, whyBetter: "A fully modular, circular smartphone engineered for self-repairability with 70% fair-mined and recycled conflict-free minerals." },
-        { name: "Refurbished iPhone 14 Pro", brand: "BackMarket Certified", ecoScore: 90, carbonKg: 11, whyBetter: "Opting for pre-owned tech saves 85% of manufacturing-related carbon footprints and diverts toxic e-waste." }
-      ]
-    },
-    "hydro flask growler": {
-      productName: "Hydro Flask 64 oz Reusable Stainless Growler",
-      ecoScore: 88,
-      carbonKg: 14.5,
-      carbonLevel: "Low",
-      greenwashingRisk: "Low",
-      greenwashingDetails: "Strong life-span utility backed by extreme durability. No synthetic BPA resins. Claims focus on functional reuse benefits rather than dubious organic-branding buzzwords.",
-      highlights: [
-        "Pro-Grade 18/8 Stainless Steel construction",
-        "BPA-Free and Phthalate-Free manufacturing",
-        "Double-wall vacuum insulation minimizes beverage waste",
-        "Eliminates up to 1,200 single-use bottles/cans over its lifespan"
-      ],
-      insights: [
-        "Although the production of pro-grade virgin stainless steel has high initial energy inputs, the 10-year durability yields huge net savings.",
-        "Fully powder-coated exterior is robust against physical friction, preventing premature product retirement.",
-        "Eliminates continuous food-grade plastic microparticle contamination found in disposable pet bottles."
-      ],
-      alternatives: [
-        { name: "Klean Kanteen TKWide", brand: "Klean Kanteen", ecoScore: 91, carbonKg: 13.1, whyBetter: "Consistently utilizes 90% certified post-consumer recycled stainless steel in all production chambers, cutting refining impacts." },
-        { name: "Lifefactory Glass Canteen", brand: "Lifefactory", ecoScore: 89, carbonKg: 8.4, whyBetter: "Uses sand-based glass composition which requires lower furnace melting energies than heavy surgical steels and is indefinitely recyclable." }
-      ]
+    if (!productName || typeof productName !== "string") {
+      return res.status(400).json({ error: "Product name must be a valid string." });
     }
-  };
 
-  const cleanName = productName.toLowerCase().trim();
+    const cleanName = productName.trim();
+    if (cleanName.length < 2) {
+      return res.status(400).json({ error: "Product name is too short (minimum 2 characters)." });
+    }
+    if (cleanName.length > 200) {
+      return res.status(400).json({ error: "Product name is too long (maximum 200 characters)." });
+    }
 
-  // If we have the Gemini API client initialized, let's run real generative AI!
-  if (ai) {
-    try {
-      console.log(`Sending query to Gemini 3.5 Flash for product: "${productName}"`);
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: `Analyze the sustainability credentials of the following product: "${productName}". 
-        Please provide realistic, high-fidelity environmental impact data based on extensive knowledge. Evaluate its material footprint, lifetime, packaging, resource intensiveness, and greenwashing tendencies.`,
-        config: {
-          systemInstruction: `You are EcoCart, a highly objective full-stack sustainability auditor and environmental impact scientist. 
-          Your goal is to inspect and score products from 0 to 100 on their ecological responsibility (materials, fair labor, lifespan, recyclability) and identify greenwashing.
-          Be completely realistic. Fast-fashion products get 20-45. Truly regenerative certified products get 85-98. Standard mainstream consumer items get 50-80.
-          Identify greenwashing risks accurately: check if they make bold "green", "natural", or "eco-friendly" slogans without clear, traceable labels.
-          Recommend active, highly viable eco-friendly alternatives. Always return the output strictly in valid JSON matching the specified schema. Dont leave fields empty. Deliver real, educational metrics.`,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              productName: {
-                type: Type.STRING,
-                description: "Cleaned official or generic name of the product"
-              },
-              ecoScore: {
-                type: Type.INTEGER,
-                description: "An overall sustainability score from 0 to 100 based on resource efficiency and environmental integrity"
-              },
-              carbonKg: {
-                type: Type.NUMBER,
-                description: "Estimated lifecycle carbon footprint in kilograms of CO2 equivalent (kg CO2e)"
-              },
-              carbonLevel: {
-                type: Type.STRING,
-                description: "Level of carbon footprint. Must be either 'Low', 'Medium', or 'High'"
-              },
-              greenwashingRisk: {
-                type: Type.STRING,
-                description: "Risk degree for misleading eco claims. Must be 'Low', 'Medium', or 'High'"
-              },
-              greenwashingDetails: {
-                type: Type.STRING,
-                description: "A detailed explanation of why the product is or isn't a greenwashing risk, citing specific claims, certifications, or lack thereof."
-              },
-              highlights: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "4 concise, high-impact bulleted material or certification facts"
-              },
-              insights: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "3 detailed, educational sentences exploring supply chain, chemical processing, and microplastic/e-waste lifecycle dynamics"
-              },
-              alternatives: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING, description: "Name of the alternative product" },
-                    brand: { type: Type.STRING, description: "Brand name of the alternative product" },
-                    ecoScore: { type: Type.INTEGER, description: "Ecoloop metric score (0-100)" },
-                    carbonKg: { type: Type.NUMBER, description: "Estimated kg CO2e for alternative" },
-                    whyBetter: { type: Type.STRING, description: "A highly clear 1-sentence description explaining exactly why this product stands out sustainably" }
-                  },
-                  required: ["name", "brand", "ecoScore", "carbonKg", "whyBetter"]
-                },
-                description: "Exactly 2 outstanding, environmentally superior alternatives representing eco-pioneers"
-              }
-            },
-            required: [
-              "productName",
-              "ecoScore",
-              "carbonKg",
-              "carbonLevel",
-              "greenwashingRisk",
-              "greenwashingDetails",
-              "highlights",
-              "insights",
-              "alternatives"
-            ]
-          }
-        }
-      });
-
-      const text = response.text;
-      if (text) {
-        const parsed = JSON.parse(text.trim());
-        return res.json({ ...parsed, isSandbox: false });
-      } else {
-        throw new Error("Empty response from Gemini API");
+    // Pre-configured rich sandbox mock metrics as a high-fidelity fallback
+    const mockDatabase: Record<string, any> = {
+      "patagonia synchilla fleece": {
+        productName: "Patagonia Synchilla Fleece Jacket",
+        ecoScore: 92,
+        carbonKg: 8.5,
+        carbonLevel: "Low",
+        greenwashingRisk: "Low",
+        greenwashingDetails: "Patagonia's claims are fully backed by independent certifications. The product is made of 100% recycled polyester processed in Fair Trade certified factories. Supply chain transparency is exceptionally high.",
+        highlights: [
+          "100% Recycled Polyester fleece fiber source",
+          "Fair Trade Certified sewing for ethical labor conditions",
+          "Worn Wear program eligible for lifetime repairs",
+          "Bluesign certified material processing"
+        ],
+        insights: [
+          "Saves water and reduces CO2 emissions by approximately 30% compared to virgin polyester imports.",
+          "Constructed with mechanical recycling processes which completely avoid petrochemical synthesizing.",
+          "Contains heavy-duty zippers built for long durability, which significantly lowers overall lifecycle waste."
+        ],
+        alternatives: [
+          { name: "Cotopaxi Teca Fleece", brand: "Cotopaxi", ecoScore: 89, carbonKg: 9.1, whyBetter: "Uses remaining stock/recycled fleece fabrics, helping clean up landfill surpluses in clothing factories." },
+          { name: "EcoOuter recycled wool pullover", brand: "EcoOuter", ecoScore: 94, carbonKg: 6.2, whyBetter: "Swapping synthetic fleece for organic recycled wool cuts down synthetic microplastic shedding by 100%." }
+        ]
+      },
+      "h&m polyester t-shirt": {
+        productName: "H&M Standard Polyester T-Shirt",
+        ecoScore: 32,
+        carbonKg: 24.2,
+        carbonLevel: "High",
+        greenwashingRisk: "High",
+        greenwashingDetails: "Strong greenwashing indications detected. Frequently marketed as 'Conscious' or containing recycled content, yet the product materials contain over 80% virgin synthetics without detailed origin certificates or carbon offset auditing.",
+        highlights: [
+          "85% Virgin Synthetic Polyester fiber",
+          "Disposable fast-fashion framework with low lifecycle durability",
+          "Heavy chemical sizing and synthetic dye usage",
+          "No microplastic shedding prevention safeguards"
+        ],
+        insights: [
+          "High reliance on petrochemical extraction, yielding nearly triples the carbon footprint compared to organic cotton counterparts.",
+          "Synthetic blend structure prevents post-consumer mechanical fiber sorting, making the product highly non-recyclable.",
+          "Estimated longevity of less than 15 washes due to light knit tension and high elasticity decay."
+        ],
+        alternatives: [
+          { name: "Organic Cotton Heritage Tee", brand: "Organic Basics", ecoScore: 95, carbonKg: 4.1, whyBetter: "100% organic cotton, 85% less chemicals, zero synthetic microplastics, fully compostable." },
+          { name: "Refined Hemp Daily Crew", brand: "Jungmaven", ecoScore: 91, carbonKg: 3.8, whyBetter: "Made from natural woody fibers that sequester carbon from the atmosphere and require zero irrigation or pesticides." }
+        ]
+      },
+      "apple iphone 15 pro": {
+        productName: "Apple iPhone 15 Pro (128GB)",
+        ecoScore: 78,
+        carbonKg: 66,
+        carbonLevel: "Medium",
+        greenwashingRisk: "Low",
+        greenwashingDetails: "Apple's environmental report provides reliable documentation verified by third-party auditors. Over 25% recycled materials used overall (including 100% recycled gold, cobalt, and copper), and carbon claims match exact logistics offsets.",
+        highlights: [
+          "100% Recycled Cobalt in the battery cell",
+          "75% Recycled Aluminum in the internal chassis structure",
+          "Packaging is 99% fiber-based and plastic-free",
+          "Produced using 100% clean green manufacturing electricity"
+        ],
+        insights: [
+          "Carbon footprint is slightly lowered from prior models due to substantial increases in clean grid operation offsets by manufacturing partners.",
+          "Main environmental cost stems from semiconductor cleanroom manufacturing and global shipping.",
+          "Highly modular recycling is possible at designated Apple disassembly robots, though self-repair remains moderately difficult."
+        ],
+        alternatives: [
+          { name: "Fairphone 5", brand: "Fairphone", ecoScore: 96, carbonKg: 42, whyBetter: "A fully modular, circular smartphone engineered for self-repairability with 70% fair-mined and recycled conflict-free minerals." },
+          { name: "Refurbished iPhone 14 Pro", brand: "BackMarket Certified", ecoScore: 90, carbonKg: 11, whyBetter: "Opting for pre-owned tech saves 85% of manufacturing-related carbon footprints and diverts toxic e-waste." }
+        ]
+      },
+      "hydro flask growler": {
+        productName: "Hydro Flask 64 oz Reusable Stainless Growler",
+        ecoScore: 88,
+        carbonKg: 14.5,
+        carbonLevel: "Low",
+        greenwashingRisk: "Low",
+        greenwashingDetails: "Strong life-span utility backed by extreme durability. No synthetic BPA resins. Claims focus on functional reuse benefits rather than dubious organic-branding buzzwords.",
+        highlights: [
+          "Pro-Grade 18/8 Stainless Steel construction",
+          "BPA-Free and Phthalate-Free manufacturing",
+          "Double-wall vacuum insulation minimizes beverage waste",
+          "Eliminates up to 1,200 single-use bottles/cans over its lifespan"
+        ],
+        insights: [
+          "Although the production of pro-grade virgin stainless steel has high initial energy inputs, the 10-year durability yields huge net savings.",
+          "Fully powder-coated exterior is robust against physical friction, preventing premature product retirement.",
+          "Eliminates continuous food-grade plastic microparticle contamination found in disposable pet bottles."
+        ],
+        alternatives: [
+          { name: "Klean Kanteen TKWide", brand: "Klean Kanteen", ecoScore: 91, carbonKg: 13.1, whyBetter: "Consistently utilizes 90% certified post-consumer recycled stainless steel in all production chambers, cutting refining impacts." },
+          { name: "Lifefactory Glass Canteen", brand: "Lifefactory", ecoScore: 89, carbonKg: 8.4, whyBetter: "Uses sand-based glass composition which requires lower furnace melting energies than heavy surgical steels and is indefinitely recyclable." }
+        ]
       }
-    } catch (apiError: any) {
-      // Gracefully falling back to high-fidelity sandbox database on any API issue
-      const isQuotaError = apiError && apiError.message && apiError.message.includes("quota");
-      // Fallback matching
-    }
-  }
-
-  // Active Sandbox search fallback matching
-  let matchedData = mockDatabase[cleanName];
-
-  if (!matchedData) {
-    // Try substring matching
-    const matchingKey = Object.keys(mockDatabase).find(k => cleanName.includes(k) || k.includes(cleanName));
-    if (matchingKey) {
-      matchedData = mockDatabase[matchingKey];
-    }
-  }
-
-  if (!matchedData) {
-    // Dynamically fabricate high-fidelity generic analytics mock if product is not in database
-    const lengthSeed = cleanName.length;
-    const computedEcoScore = Math.max(15, Math.min(95, 45 + (lengthSeed % 40)));
-    const calculatedCarbon = Math.max(1.5, Math.min(180, (lengthSeed * 3.8) % 150));
-    const carbonRating = calculatedCarbon < 10 ? "Low" : calculatedCarbon < 45 ? "Medium" : "High";
-    const computedGreenwashingRisk = computedEcoScore < 45 ? "High" : computedEcoScore < 75 ? "Medium" : "Low";
-
-    matchedData = {
-      productName: productName.charAt(0).toUpperCase() + productName.slice(1),
-      ecoScore: computedEcoScore,
-      carbonKg: parseFloat(calculatedCarbon.toFixed(1)),
-      carbonLevel: carbonRating,
-      greenwashingRisk: computedGreenwashingRisk,
-      greenwashingDetails: computedGreenwashingRisk === "High"
-        ? `This product displays multiple uncertified descriptors like 'natural feel' or 'eco-conscious' without third-party audit reports, creating a notable risk of greenwashing.`
-        : `Moderate to high credentials transparently state origin sources. Material certifications for this product class are fully reliable.`,
-      highlights: [
-        `${(30 + (lengthSeed % 60))}% material recycling composition`,
-        "Basic regulatory packaging compliance verified",
-        "Mainstream logistics fuel-emission efficiency metrics apply",
-        "Limited end-of-use reclamation infrastructure available"
-      ],
-      insights: [
-        "Primary supply chain uses traditional electricity grids, producing standard carbon emissions during high-temperature baking or extrusion.",
-        "Chemical coloring process relies on standardized metal solutions with partial eco-filter remediation before wastewater release.",
-        "Longevity is estimated as average for this product class, maintaining functional stability over standard life expectancy."
-      ],
-      alternatives: [
-        {
-          name: `Eco-${productName.split(" ").slice(-1)[0] || "Universal"} Pro`,
-          brand: "BioCradle Tech",
-          ecoScore: Math.min(98, computedEcoScore + 18),
-          carbonKg: parseFloat((calculatedCarbon * 0.4).toFixed(1)),
-          whyBetter: "Fully manufactured in 100% wind-powered facilities utilizing locally sourced, organic inputs that reduce secondary logistics impact."
-        },
-        {
-          name: `ZeroFootprint ${productName.split(" ").slice(-1)[0] || "Universal"}`,
-          brand: "LoopCraft",
-          ecoScore: Math.min(96, computedEcoScore + 15),
-          carbonKg: parseFloat((calculatedCarbon * 0.55).toFixed(1)),
-          whyBetter: "A circular economy design allowing for direct post-use returns, preventing landfill accumulation and eliminating micro-waste."
-        }
-      ]
     };
+
+    const searchName = cleanName.toLowerCase();
+
+    // If we have the Gemini API client initialized, let's run real generative AI!
+    if (ai) {
+      try {
+        console.log(`Sending query to Gemini 3.5 Flash for product: "${cleanName}"`);
+        const response = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: `Analyze the sustainability credentials of the following product: "${cleanName}". 
+          Please provide realistic, high-fidelity environmental impact data based on extensive knowledge. Evaluate its material footprint, lifetime, packaging, resource intensiveness, and greenwashing tendencies.`,
+          config: {
+            systemInstruction: `You are EcoCart, a highly objective full-stack sustainability auditor and environmental impact scientist. 
+            Your goal is to inspect and score products from 0 to 100 on their ecological responsibility (materials, fair labor, lifespan, recyclability) and identify greenwashing.
+            Be completely realistic. Fast-fashion products get 20-45. Truly regenerative certified products get 85-98. Standard mainstream consumer items get 50-80.
+            Identify greenwashing risks accurately: check if they make bold "green", "natural", or "eco-friendly" slogans without clear, traceable labels.
+            Recommend active, highly viable eco-friendly alternatives. Always return the output strictly in valid JSON matching the specified schema. Dont leave fields empty. Deliver real, educational metrics.`,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                productName: {
+                  type: Type.STRING,
+                  description: "Cleaned official or generic name of the product"
+                },
+                ecoScore: {
+                  type: Type.INTEGER,
+                  description: "An overall sustainability score from 0 to 100 based on resource efficiency and environmental integrity"
+                },
+                carbonKg: {
+                  type: Type.NUMBER,
+                  description: "Estimated lifecycle carbon footprint in kilograms of CO2 equivalent (kg CO2e)"
+                },
+                carbonLevel: {
+                  type: Type.STRING,
+                  description: "Level of carbon footprint. Must be either 'Low', 'Medium', or 'High'"
+                },
+                greenwashingRisk: {
+                  type: Type.STRING,
+                  description: "Risk degree for misleading eco claims. Must be 'Low', 'Medium', or 'High'"
+                },
+                greenwashingDetails: {
+                  type: Type.STRING,
+                  description: "A detailed explanation of why the product is or isn't a greenwashing risk, citing specific claims, certifications, or lack thereof."
+                },
+                highlights: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: "4 concise, high-impact material or certification facts"
+                },
+                insights: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: "3 detailed, educational sentences exploring supply chain, chemical processing, and microplastic/e-waste lifecycle dynamics"
+                },
+                alternatives: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING, description: "Name of the alternative product" },
+                      brand: { type: Type.STRING, description: "Brand name of the alternative product" },
+                      ecoScore: { type: Type.INTEGER, description: "Ecoloop metric score (0-100)" },
+                      carbonKg: { type: Type.NUMBER, description: "Estimated kg CO2e for alternative" },
+                      whyBetter: { type: Type.STRING, description: "A highly clear 1-sentence description explaining exactly why this product stands out sustainably" }
+                    },
+                    required: ["name", "brand", "ecoScore", "carbonKg", "whyBetter"]
+                  },
+                  description: "Exactly 2 outstanding, environmentally superior alternatives representing eco-pioneers"
+                }
+              },
+              required: [
+                "productName",
+                "ecoScore",
+                "carbonKg",
+                "carbonLevel",
+                "greenwashingRisk",
+                "greenwashingDetails",
+                "highlights",
+                "insights",
+                "alternatives"
+              ]
+            }
+          }
+        });
+
+        const text = response.text;
+        if (text) {
+          // Clean text response of any markdown backticks wrapper if generated
+          let cleanText = text.trim();
+          if (cleanText.startsWith("```json")) {
+            cleanText = cleanText.substring(7);
+          } else if (cleanText.startsWith("```")) {
+            cleanText = cleanText.substring(3);
+          }
+          if (cleanText.endsWith("```")) {
+            cleanText = cleanText.substring(0, cleanText.length - 3);
+          }
+          cleanText = cleanText.trim();
+
+          const parsed = JSON.parse(cleanText);
+
+          // Robust validation and schema repairing
+          const validated: any = {};
+          validated.productName = typeof parsed.productName === "string" && parsed.productName.trim()
+            ? parsed.productName.trim()
+            : cleanName;
+
+          validated.ecoScore = typeof parsed.ecoScore === "number" && !isNaN(parsed.ecoScore)
+            ? Math.max(0, Math.min(100, Math.round(parsed.ecoScore)))
+            : 50;
+
+          validated.carbonKg = typeof parsed.carbonKg === "number" && !isNaN(parsed.carbonKg)
+            ? parseFloat(parsed.carbonKg.toFixed(1))
+            : 15.0;
+
+          if (parsed.carbonLevel === "Low" || parsed.carbonLevel === "Medium" || parsed.carbonLevel === "High") {
+            validated.carbonLevel = parsed.carbonLevel;
+          } else {
+            validated.carbonLevel = validated.carbonKg < 10 ? "Low" : validated.carbonKg < 45 ? "Medium" : "High";
+          }
+
+          if (parsed.greenwashingRisk === "Low" || parsed.greenwashingRisk === "Medium" || parsed.greenwashingRisk === "High") {
+            validated.greenwashingRisk = parsed.greenwashingRisk;
+          } else {
+            validated.greenwashingRisk = validated.ecoScore > 75 ? "Low" : validated.ecoScore > 45 ? "Medium" : "High";
+          }
+
+          validated.greenwashingDetails = typeof parsed.greenwashingDetails === "string" && parsed.greenwashingDetails.trim()
+            ? parsed.greenwashingDetails.trim()
+            : "No detailed risk analysis reported by auditor.";
+
+          validated.highlights = Array.isArray(parsed.highlights)
+            ? parsed.highlights.filter((h: any) => typeof h === "string" && h.trim()).map((h: string) => h.trim())
+            : [];
+          if (validated.highlights.length === 0) {
+            validated.highlights = [
+              "Material and supply chain parameters evaluated",
+              "Standard regulatory environmental checks active"
+            ];
+          }
+
+          validated.insights = Array.isArray(parsed.insights)
+            ? parsed.insights.filter((i: any) => typeof i === "string" && i.trim()).map((i: string) => i.trim())
+            : [];
+          if (validated.insights.length === 0) {
+            validated.insights = [
+              "Primary production uses standard regional power grid resources.",
+              "Waste cycle metrics indicate typical shelf life expectancies."
+            ];
+          }
+
+          validated.alternatives = [];
+          if (Array.isArray(parsed.alternatives)) {
+            for (const alt of parsed.alternatives) {
+              if (alt && typeof alt.name === "string" && alt.name.trim() && typeof alt.brand === "string" && alt.brand.trim()) {
+                validated.alternatives.push({
+                  name: alt.name.trim(),
+                  brand: alt.brand.trim(),
+                  ecoScore: typeof alt.ecoScore === "number" && !isNaN(alt.ecoScore) ? Math.max(0, Math.min(100, Math.round(alt.ecoScore))) : 80,
+                  carbonKg: typeof alt.carbonKg === "number" && !isNaN(alt.carbonKg) ? parseFloat(alt.carbonKg.toFixed(1)) : 8.0,
+                  whyBetter: typeof alt.whyBetter === "string" && alt.whyBetter.trim() ? alt.whyBetter.trim() : "Has a lower environmental footprint."
+                });
+              }
+            }
+          }
+
+          while (validated.alternatives.length < 2) {
+            const suffix = validated.alternatives.length === 0 ? "Circular Alternative" : "Regenerative Choice";
+            validated.alternatives.push({
+              name: `${validated.productName} ${suffix}`,
+              brand: "EcoLeague",
+              ecoScore: Math.min(98, validated.ecoScore + 15),
+              carbonKg: parseFloat((validated.carbonKg * 0.5).toFixed(1)),
+              whyBetter: "Locally sourced organic inputs and fully carbon-offset logistics."
+            });
+          }
+          if (validated.alternatives.length > 2) {
+            validated.alternatives = validated.alternatives.slice(0, 2);
+          }
+
+          return res.json({ ...validated, isSandbox: false });
+        } else {
+          throw new Error("Empty response from Gemini API");
+        }
+      } catch (apiError: any) {
+        console.error(`Gemini API product analysis failed for "${cleanName}":`, apiError);
+        // Continue to the mock database fallback below
+      }
+    }
+
+    // Active Sandbox search fallback matching
+    let matchedData = mockDatabase[searchName];
+
+    if (!matchedData) {
+      // Try substring matching
+      const matchingKey = Object.keys(mockDatabase).find(k => searchName.includes(k) || k.includes(searchName));
+      if (matchingKey) {
+        matchedData = mockDatabase[matchingKey];
+      }
+    }
+
+    if (!matchedData) {
+      // Dynamically fabricate high-fidelity generic analytics mock if product is not in database
+      const lengthSeed = searchName.length;
+      const computedEcoScore = Math.max(15, Math.min(95, 45 + (lengthSeed % 40)));
+      const calculatedCarbon = Math.max(1.5, Math.min(180, (lengthSeed * 3.8) % 150));
+      const carbonRating = calculatedCarbon < 10 ? "Low" : calculatedCarbon < 45 ? "Medium" : "High";
+      const computedGreenwashingRisk = computedEcoScore < 45 ? "High" : computedEcoScore < 75 ? "Medium" : "Low";
+
+      matchedData = {
+        productName: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+        ecoScore: computedEcoScore,
+        carbonKg: parseFloat(calculatedCarbon.toFixed(1)),
+        carbonLevel: carbonRating,
+        greenwashingRisk: computedGreenwashingRisk,
+        greenwashingDetails: computedGreenwashingRisk === "High"
+          ? `This product displays multiple uncertified descriptors like 'natural feel' or 'eco-conscious' without third-party audit reports, creating a notable risk of greenwashing.`
+          : `Moderate to high credentials transparently state origin sources. Material certifications for this product class are fully reliable.`,
+        highlights: [
+          `${(30 + (lengthSeed % 60))}% material recycling composition`,
+          "Basic regulatory packaging compliance verified",
+          "Mainstream logistics fuel-emission efficiency metrics apply",
+          "Limited end-of-use reclamation infrastructure available"
+        ],
+        insights: [
+          "Primary supply chain uses traditional electricity grids, producing standard carbon emissions during high-temperature baking or extrusion.",
+          "Chemical coloring process relies on standardized metal solutions with partial eco-filter remediation before wastewater release.",
+          "Longevity is estimated as average for this product class, maintaining functional stability over standard life expectancy."
+        ],
+        alternatives: [
+          {
+            name: `Eco-${cleanName.split(" ").slice(-1)[0] || "Universal"} Pro`,
+            brand: "BioCradle Tech",
+            ecoScore: Math.min(98, computedEcoScore + 18),
+            carbonKg: parseFloat((calculatedCarbon * 0.4).toFixed(1)),
+            whyBetter: "Fully manufactured in 100% wind-powered facilities utilizing locally sourced, organic inputs that reduce secondary logistics impact."
+          },
+          {
+            name: `ZeroFootprint ${cleanName.split(" ").slice(-1)[0] || "Universal"}`,
+            brand: "LoopCraft",
+            ecoScore: Math.min(96, computedEcoScore + 15),
+            carbonKg: parseFloat((calculatedCarbon * 0.55).toFixed(1)),
+            whyBetter: "A circular economy design allowing for direct post-use returns, preventing landfill accumulation and eliminating micro-waste."
+          }
+        ]
+      };
+    }
+
+    const finalData = { ...matchedData, isSandbox: true };
+
+    // Slight simulated network delay to make the premium AI analysis dashboard feel organic and satisfying
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    return res.json(finalData);
+  } catch (globalError: any) {
+    console.error("Unhandled exception in /api/analyze endpoint:", globalError);
+    return res.status(500).json({ error: "An unexpected internal server error occurred." });
   }
-
-  const finalData = { ...matchedData, isSandbox: true };
-
-  // Slight simulated network delay to make the premium AI analysis dashboard feel organic and satisfying
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-  return res.json(finalData);
 });
 
 // 2. API: Generate & Download Chrome Extension ZIP File on-the-fly
@@ -699,79 +803,93 @@ function generateMockEcoGraphic(prompt: string, size: string, aspectRatio: strin
 
 // 3. API: Generate environmental branding graphics using gemini-3-pro-image-preview
 app.post("/api/generate-image", async (req, res) => {
-  const { prompt, imageSize = "1K", aspectRatio = "1:1" } = req.body;
+  try {
+    const { prompt, imageSize = "1K", aspectRatio = "1:1" } = req.body;
 
-  if (!prompt || typeof prompt !== "string") {
-    return res.status(400).json({ error: "Prompt description is required" });
-  }
+    if (!prompt || typeof prompt !== "string") {
+      return res.status(400).json({ error: "Prompt description is required." });
+    }
 
-  const validSizes = ["512px", "1K", "2K", "4K"];
-  const finalSize = validSizes.includes(imageSize) ? imageSize : "1K";
+    const cleanPrompt = prompt.trim();
+    if (cleanPrompt.length < 3) {
+      return res.status(400).json({ error: "Prompt description is too short (minimum 3 characters)." });
+    }
+    if (cleanPrompt.length > 500) {
+      return res.status(400).json({ error: "Prompt description is too long (maximum 500 characters)." });
+    }
 
-  if (ai) {
-    try {
-      console.log(`Querying gemini-3-pro-image-preview for prompt: "${prompt}" [Size: ${finalSize}, Aspect: ${aspectRatio}]`);
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
-        contents: {
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: aspectRatio,
-            imageSize: finalSize,
+    const validSizes = ["512px", "1K", "2K", "4K"];
+    const finalSize = validSizes.includes(imageSize) ? imageSize : "1K";
+
+    if (ai) {
+      try {
+        console.log(`Querying gemini-3-pro-image-preview for prompt: "${cleanPrompt}" [Size: ${finalSize}, Aspect: ${aspectRatio}]`);
+        const response = await ai.models.generateContent({
+          model: "gemini-3-pro-image-preview",
+          contents: {
+            parts: [
+              {
+                text: cleanPrompt,
+              },
+            ],
           },
-        },
-      });
+          config: {
+            imageConfig: {
+              aspectRatio: aspectRatio,
+              imageSize: finalSize,
+            },
+          },
+        });
 
-      let base64Image = null;
-      let textResponse = "";
+        let base64Image = null;
+        let textResponse = "";
 
-      if (response && response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            base64Image = part.inlineData.data;
-          } else if (part.text) {
-            textResponse += part.text + " ";
+        if (response && response.candidates && response.candidates[0] && response.candidates[0].content && response.candidates[0].content.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+              base64Image = part.inlineData.data;
+            } else if (part.text) {
+              textResponse += part.text + " ";
+            }
           }
         }
-      }
 
-      if (base64Image) {
+        if (base64Image) {
+          return res.json({
+            imageUrl: `data:image/png;base64,${base64Image}`,
+            description: textResponse.trim() || undefined,
+            isSandbox: false,
+          });
+        } else {
+          throw new Error("No inline image payload returned by the model candidates.");
+        }
+      } catch (apiError: any) {
+        console.error(`Gemini Image Generation failed for prompt "${cleanPrompt}":`, apiError);
+        const isQuotaError = apiError && apiError.message && apiError.message.includes("quota");
+        let notice = "Using high-fidelity graphics simulator because of system request quotas.";
+        if (!isQuotaError) {
+          notice = `Notice: Gemini API offline (${apiError.message || 'invalid key or connection error'}). Switched to offline high-fidelity simulator.`;
+        }
+        const base64Mock = generateMockEcoGraphic(cleanPrompt, finalSize, aspectRatio);
         return res.json({
-          imageUrl: `data:image/png;base64,${base64Image}`,
-          description: textResponse.trim() || undefined,
-          isSandbox: false,
+          imageUrl: base64Mock,
+          description: `Branding Graphic: "${cleanPrompt}" successfully rendered via standard sandbox layout pipeline.`,
+          isSandbox: true,
+          notice,
         });
-      } else {
-        throw new Error("No inline image payload returned by the model candidates.");
       }
-    } catch (apiError: any) {
-      const isQuotaError = apiError && apiError.message && apiError.message.includes("quota");
-      let notice = "Using high-fidelity graphics simulator because of system request quotas.";
-      if (!isQuotaError) {
-        notice = `Notice: Gemini API offline (invalid key or connection issues). Switched to offline high-fidelity simulator.`;
-      }
-      const base64Mock = generateMockEcoGraphic(prompt, finalSize, aspectRatio);
+    } else {
+      // No Gemini key found
+      const base64Mock = generateMockEcoGraphic(cleanPrompt, finalSize, aspectRatio);
       return res.json({
         imageUrl: base64Mock,
-        description: `Branding Graphic: "${prompt}" successfully rendered via standard sandbox layout pipeline.`,
+        description: `Branding Graphic: "${cleanPrompt}" successfully rendered via standard sandbox layout pipeline.`,
         isSandbox: true,
-        notice,
       });
     }
-  } else {
-    // No Gemini key found
-    const base64Mock = generateMockEcoGraphic(prompt, finalSize, aspectRatio);
-    return res.json({
-      imageUrl: base64Mock,
-      description: `Branding Graphic: "${prompt}" successfully rendered via standard sandbox layout pipeline.`,
-      isSandbox: true,
-    });
+  } catch (globalError: any) {
+    console.error("Unhandled exception in /api/generate-image endpoint:", globalError);
+    return res.status(500).json({ error: "An unexpected internal server error occurred during graphic generation." });
   }
 });
 
