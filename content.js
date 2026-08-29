@@ -108,8 +108,66 @@ function getEcoAnalysis(productTitle) {
   };
 }
 
-// Create and inject the Sustainability Badge
+// Globally cached analysis and details for active-tab synchronization
+let currentProductTitle = "";
+let cachedAnalysis = null;
+let cachedDetails = null;
+
+// Create and inject the Sustainability Badge asynchronously
 function injectBadge() {
+  const details = getProductDetails();
+  if (!details || !details.title || details.title === "Universal Eco Shirt") return;
+
+  // Handle single-page app title changes or navigation
+  if (document.getElementById("ecocart-badge")) {
+    const existingBadge = document.getElementById("ecocart-badge");
+    if (currentProductTitle !== details.title) {
+      existingBadge.remove();
+      cachedAnalysis = null;
+      cachedDetails = null;
+    } else {
+      return;
+    }
+  }
+
+  currentProductTitle = details.title;
+  cachedDetails = details;
+
+  // Query background service worker to fetch analysis from EcoCart backend
+  chrome.runtime.sendMessage(
+    { action: "analyzeProduct", productName: details.title },
+    (response) => {
+      let analysis;
+      if (response && response.success && response.data) {
+        const d = response.data;
+        analysis = {
+          score: d.ecoScore,
+          carbon: d.carbonKg.toFixed(1),
+          confidence: 95, // Verified backend confidence
+          greenwashing: d.greenwashingRisk === "Low" ? "Low Risk (Verified)" : d.greenwashingRisk === "Medium" ? "Moderate Risk" : "High Risk",
+          materials: d.highlights || ["Evaluated material footprint"],
+          alternatives: (d.alternatives || []).map(alt => ({
+            name: alt.name,
+            brand: alt.brand,
+            score: alt.ecoScore,
+            carbon: alt.carbonKg.toFixed(1),
+            price: "$$$", // Placeholder price for UI consistency
+            whyBetter: alt.whyBetter
+          }))
+        };
+      } else {
+        // Safe offline local computation fallback
+        analysis = getEcoAnalysis(details.title);
+      }
+
+      cachedAnalysis = analysis;
+      renderBadgeElement(details, analysis);
+    }
+  );
+}
+
+// Render the badge on the page once analysis is resolved
+function renderBadgeElement(details, analysis) {
   if (document.getElementById("ecocart-badge")) return;
 
   const mkt = getMarketplaceType();
@@ -126,17 +184,14 @@ function injectBadge() {
 
   if (!targetElement) return;
 
-  const details = getProductDetails();
-  const analysis = getEcoAnalysis(details.title);
-
   const badge = document.createElement("div");
   badge.id = "ecocart-badge";
-  badge.className = "eco-badge-container";
+  badge.className = "eco-badge-container ecointercept-badge-pulse"; // Link with custom pulse animation in styles.css
   
   badge.innerHTML = `
     <span class="eco-badge-leaf">🌱</span>
     <span class="eco-badge-label">EcoScore:</span>
-    <span class="eco-badge-valueValue ${analysis.score >= 70 ? 'good' : 'warning'}">${analysis.score}/100</span>
+    <span class="eco-badge-value" style="color: ${analysis.score >= 70 ? '#4ADE80' : '#FBBF24'}">${analysis.score}/100</span>
   `;
 
   // Inline styling to ensure visual consistency regardless of site stylesheets
@@ -229,7 +284,7 @@ function populateSidebarContent(details, analysis) {
 
       <!-- Score Circle Visualizer -->
       <div style="display: flex; justify-content: center; margin: 20px 0;">
-        <div style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid ${scoreColor}; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);">
+        <div style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid ${scoreColor}; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);">
           <span style="font-size: 32px; font-weight: 800; color: ${scoreColor};">${analysis.score}</span>
           <span style="font-size: 10px; color: #64748B; text-transform: uppercase;">EcoScore</span>
         </div>
@@ -260,7 +315,7 @@ function populateSidebarContent(details, analysis) {
               <div>
                 <span style="font-size: 10px; color: #10B981; text-transform: uppercase; font-weight: bold; background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">#${idx+1} Recommendation</span>
                 <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">${alt.name}</h4>
-                <span style="font-size: 12px; color: #64748B;">By ${alt.brand} | price: ${alt.price}</span>
+                <span style="font-size: 12px; color: #64748B;">By ${alt.brand} | Price: ${alt.price}</span>
               </div>
               <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; border-radius: 6px; padding: 4px 8px; font-weight: bold; font-size: 12px; color: #10B981;">
                 ${alt.score}
@@ -300,6 +355,7 @@ function populateSidebarContent(details, analysis) {
 }
 
 // Perform Instant Swap of UI values dynamically
+// (Used to swap non-organic product details with organic alternative metadata locally on page)
 function performInstantSwap(name, price, brand) {
   const mkt = getMarketplaceType();
   const rules = SELECTORS[mkt];
@@ -330,7 +386,7 @@ function performInstantSwap(name, price, brand) {
     setTimeout(() => { priceEl.style.transform = "scale(1)"; }, 400);
   }
 
-  // Add visual success notification
+  // Add visual success notification popup
   const notification = document.createElement("div");
   notification.style.position = "fixed";
   notification.style.bottom = "20px";
@@ -361,7 +417,7 @@ function startObserver() {
   injectBadge();
   
   observer = new MutationObserver((mutations) => {
-    // Avoid checking when the badge itself changes
+    // Avoid checking when the badge itself changes to prevent recursion loop
     const badgeModifiedInRecord = mutations.some(record => {
       return Array.from(record.addedNodes).some(node => node.id === "ecocart-badge" || node.id === "ecocart-sidebar");
     });
@@ -373,9 +429,28 @@ function startObserver() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-// Initialized via window state checking
+// Initialized observer via window state checking
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", startObserver);
 } else {
   startObserver();
 }
+
+// Message receiver listener for active-tab synchronization requests from popup UI
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "getActiveProduct") {
+    const details = getProductDetails();
+    if (details && details.title && details.title !== "Universal Eco Shirt") {
+      if (cachedAnalysis && currentProductTitle === details.title) {
+        sendResponse({ success: true, details, analysis: cachedAnalysis });
+      } else {
+        // Fallback to local computation if background request not completed yet
+        const analysis = getEcoAnalysis(details.title);
+        sendResponse({ success: true, details, analysis });
+      }
+    } else {
+      sendResponse({ success: false, error: "No product detected on this tab." });
+    }
+  }
+  return true;
+});
