@@ -41,6 +41,7 @@ import {
   FAQS 
 } from "./data";
 import { EarthMascot } from "./components/EarthMascot";
+import { ProductAnalysis } from "./types";
 
 const LogoIcon = ({ className = "w-10 h-10" }: { className?: string }) => (
   <svg 
@@ -270,6 +271,157 @@ export default function App() {
     const timer = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timer);
   }, [chatMessages, isTyping, chatOpen]);
+
+  // FAQ matching helper
+  const findFAQResponse = (userQuery: string): string | null => {
+    const q = userQuery.trim().toLowerCase();
+    if (!q) return null;
+
+    // Direct match with items in FAQS array
+    const matchedFaq = FAQS.find((item) => {
+      const itemQ = item.question.toLowerCase();
+      return (
+        q === itemQ ||
+        q.includes(itemQ) ||
+        itemQ.includes(q)
+      );
+    });
+    if (matchedFaq) {
+      return matchedFaq.answer;
+    }
+
+    // Static FAQ keyword & intent matching
+    if (q.includes("privacy") || q.includes("private") || q.includes("data") || q.includes("shopping history")) {
+      return "Absolutely. EcoCart is privacy-first by design. Our browser extension operates fully in client isolation. It does not track your account details, name, payment pathways, or search history. All analysis requests to our server proxy are completely anonymized.";
+    }
+    if (q.includes("what is ecocart") || q.includes("what's ecocart") || q === "ecocart") {
+      return "EcoCart is an intelligent sustainability assistant and browser extension that analyzes retail products in real-time. It validates ecological claims, computes transparent EcoScores, and flags greenwashing risks.";
+    }
+    if (q.includes("install") || q.includes("extension") || q.includes("download") || q.includes("unpacked")) {
+      return "Installing our extension is easy!\n\n1. Click the 'Download Extension' button on our page to fetch the ZIP archive.\n2. Extract the directory.\n3. Open chrome://extensions/ in Google Chrome and toggle 'Developer Mode' ON.\n4. Click 'Load unpacked' and select the extracted folder directory!";
+    }
+    if (q.includes("ecoscore") || q.includes("score")) {
+      return "Our EcoScore engine runs a multi-tiered weighted matrix. It inspects material origin (recycled fibers vs virgin polymers), production electricity grids, fair trade labor certifications, packaging materials, product lifespan, and verifies claims to detect greenwashing.";
+    }
+    if (q.includes("store") || q.includes("website") || q.includes("platform") || q.includes("supported")) {
+      return "EcoCart is built as a universal sustainability intelligence layer. Out of the box, it provides targeted DOM integration for major marketplaces including Amazon, Flipkart, Myntra, Ajio, Meesho, alongside any storefronts powered by Shopify or WooCommerce.";
+    }
+    if (q.includes("carbon") || q.includes("emission") || q.includes("lca")) {
+      return "Our backend leverages climate-data pipelines compiled from primary environmental product declarations (EPDs) and greenhouse gas protocols. When you consult real-time analysis, the model references certified lifecycle databases to estimate emissions from raw materials, production, and shipping.";
+    }
+    if (q.includes("pay") || q.includes("free") || q.includes("cost") || q.includes("price")) {
+      return "No. EcoCart is 100% free and open-source. Our mission is to democratize climate-impact transparency so millions of consumers can steer their shopping power towards environmentally aligned manufacturers without financial friction.";
+    }
+    if (q === "hi" || q === "hello" || q === "hey" || q.startsWith("hi ") || q.startsWith("hello ")) {
+      return "Hello! 👋 I'm Eco 🌍, your climate-tech assistant. Ask me an FAQ question or type any product name (e.g., 'Nike sneakers', 'Apple iPhone') to analyze its sustainability!";
+    }
+
+    return null;
+  };
+
+  // Main submission handler for Chatbot
+  const handleSendMessage = async (inputQuery: string) => {
+    const cleanQuery = inputQuery.trim();
+    if (!cleanQuery || isTyping) return;
+
+    setChatInput("");
+    setChatMessages((prev) => [...prev, { sender: "user", text: cleanQuery }]);
+    setIsTyping(true);
+
+    // 1. Check if user query matches static FAQ response
+    const faqAnswer = findFAQResponse(cleanQuery);
+    if (faqAnswer) {
+      setTimeout(() => {
+        setChatMessages((prev) => [...prev, { sender: "bot", text: faqAnswer }]);
+        setIsTyping(false);
+      }, 400);
+      return;
+    }
+
+    // 2. Dynamic query -> Call /api/analyze backend
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productName: cleanQuery }),
+      });
+
+      if (!res.ok) {
+        let errorMsg = "Failed to analyze product.";
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            errorMsg = errData.error;
+          }
+        } catch (_) {}
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: `⚠️ ${errorMsg}` },
+        ]);
+        return;
+      }
+
+      const data: ProductAnalysis = await res.json();
+
+      if (!data || typeof data !== "object") {
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: "⚠️ Received an invalid response format from the server." },
+        ]);
+        return;
+      }
+
+      // Format analysis result cleanly
+      let formattedText = `🌱 Sustainability Analysis for ${data.productName || cleanQuery}\n\n`;
+      formattedText += `📊 EcoScore: ${data.ecoScore ?? "N/A"}/100\n`;
+      formattedText += `🌍 Carbon Footprint: ${data.carbonKg ?? "N/A"} kg CO2e (${data.carbonLevel || "Unknown"} Level)\n`;
+      if (data.greenwashingRisk) {
+        formattedText += `🛡️ Greenwashing Risk: ${data.greenwashingRisk} Risk\n`;
+      }
+      if (data.greenwashingDetails) {
+        formattedText += `ℹ️ ${data.greenwashingDetails}\n`;
+      }
+
+      if (Array.isArray(data.highlights) && data.highlights.length > 0) {
+        formattedText += `\n✨ Highlights:\n`;
+        data.highlights.forEach((h) => {
+          formattedText += `• ${h}\n`;
+        });
+      }
+
+      if (Array.isArray(data.insights) && data.insights.length > 0) {
+        formattedText += `\n💡 Sustainability Insights:\n`;
+        data.insights.forEach((ins) => {
+          formattedText += `• ${ins}\n`;
+        });
+      }
+
+      if (Array.isArray(data.alternatives) && data.alternatives.length > 0) {
+        formattedText += `\n♻️ Recommended Alternatives:\n`;
+        data.alternatives.forEach((alt) => {
+          formattedText += `• ${alt.name || "Alternative"} (${alt.brand || "Eco Brand"}) - EcoScore: ${alt.ecoScore ?? "N/A"}/100, Carbon: ${alt.carbonKg ?? "N/A"} kg CO2e\n  Why better: ${alt.whyBetter || "Lower environmental footprint"}\n`;
+        });
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: formattedText.trim() },
+      ]);
+    } catch (err: any) {
+      console.error("Error connecting to /api/analyze:", err);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "⚠️ Network Error: Unable to connect to the backend server. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   // Scroll visibility states for the rounded pill floating navbar
   const [prevScrollPos, setPrevScrollPos] = useState(0);
@@ -2328,30 +2480,9 @@ export default function App() {
                 ].map((sug) => (
                   <button
                     key={sug}
-                    onClick={() => {
-                      setChatMessages((prev) => [...prev, { sender: "user", text: sug }]);
-                      setIsTyping(true);
-                      setTimeout(() => {
-                        let reply = "EcoCart operates server-side to calculate full metrics dynamically.";
-                        const lowSug = sug.toLowerCase();
-                        if (lowSug.includes("what is ecocart")) {
-                          reply = "EcoCart is an intelligent sustainability assistant and browser extension that analyzes retail products in real-time. It validates ecological claims, computes transparent EcoScores, and flags greenwashing risks.";
-                        } else if (lowSug.includes("install the extension")) {
-                          reply = "Installing our extension is easy!\n\n1. Click the 'Install Extension' button at the top of our page.\n2. You will be guided to the Chrome Web Store.\n3. Click 'Add to Chrome' to pin EcoCart. It will automatically scan products as you browse!";
-                        } else if (lowSug.includes("ecoscore")) {
-                          reply = "EcoScore is our proprietary 1-100 environmental index. It assesses product materials, manufacturing, chemical safety, packaging, and supply chain travel distance to give you a clear view of ecological integrity.";
-                        } else if (lowSug.includes("websites are supported")) {
-                          reply = "We support major ecommerce websites including Amazon, Flipkart, Myntra, Ajio, Meesho, JioMart, Etsy, Nykaa, and thousands of Shopify-powered independent stores worldwide!";
-                        } else if (lowSug.includes("calculated")) {
-                          reply = "Our calculations utilize Life Cycle Assessments (LCA) and environmental databases. We estimate the carbon footprint based on raw material extraction, processing energy, packaging weight, and regional transportation logistics.";
-                        } else if (lowSug.includes("data private")) {
-                          reply = "Absolutely! EcoCart is built on an offline-first, privacy-by-design architecture. We never track your browsing history, monetize your searches, or store personal shopping cart details.";
-                        }
-                        setChatMessages((prev) => [...prev, { sender: "bot", text: reply }]);
-                        setIsTyping(false);
-                      }, 750);
-                    }}
-                    className="text-[10px] sm:text-xs font-bold bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-500/10 hover:border-emerald-300 text-emerald-800 rounded-full px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-200"
+                    onClick={() => handleSendMessage(sug)}
+                    disabled={isTyping}
+                    className="text-[10px] sm:text-xs font-bold bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-500/10 hover:border-emerald-300 text-emerald-800 rounded-full px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {sug}
                   </button>
@@ -2362,32 +2493,7 @@ export default function App() {
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!chatInput.trim()) return;
-                  const currentInput = chatInput;
-                  setChatInput("");
-                  setChatMessages((prev) => [...prev, { sender: "user", text: currentInput }]);
-                  setIsTyping(true);
-                  setTimeout(() => {
-                    let reply = "I'm still learning! 🌍 EcoCart is an AI sustainability layer. Try asking me about EcoScore, supported websites, our carbon calculation methodology, or privacy safety!";
-                    const t = currentInput.toLowerCase();
-                    if (t.includes("what is") && (t.includes("ecocart") || t.includes("cart"))) {
-                      reply = "EcoCart is an intelligent, real-time sustainability layer that runs inside your browser. It instantly verifies product credentials, tracks carbon footprints, and uncovers greenwashing attempts while offering eco-friendly alternatives.";
-                    } else if (t.includes("install") || t.includes("extension") || t.includes("download")) {
-                      reply = "Installing EcoCart is fast and simple!\n\n1. Click 'Install Extension' on our website.\n2. Add it to your browser from the Chrome Web Store.\n3. Pin the extension and watch it automatically analyze products as you shop!";
-                    } else if (t.includes("ecoscore") || t.includes("score")) {
-                      reply = "EcoScore is our proprietary 1-100 environmental index. It grades products dynamically based on material lifecycle, packaging degradability, supply chain distance, carbon emission intensity, and chemical safety certifications.";
-                    } else if (t.includes("store") || t.includes("website") || t.includes("platform") || t.includes("support")) {
-                      reply = "We seamlessly support Amazon, Flipkart, Myntra, Ajio, Meesho, JioMart, Etsy, and Nykaa, alongside thousands of independent Shopify-powered stores worldwide!";
-                    } else if (t.includes("carbon") || t.includes("emission") || t.includes("impact") || t.includes("calculate")) {
-                      reply = "Our carbon calculation model references trusted, peer-reviewed Life Cycle Assessment (LCA) databases and carbon benchmarks to estimate emissions from raw material extraction, production processing, and transport logistics.";
-                    } else if (t.includes("private") || t.includes("privacy") || t.includes("data")) {
-                      reply = "Your privacy is our core mandate. EcoCart operates with zero local user tracking. We never monitor your browsing history, save personal checkout entries, or monetize cookies.";
-                    } else if (t.includes("hi") || t.includes("hello") || t.includes("hey")) {
-                      reply = "Hello! 👋 I'm Eco 🌍, your climate-tech assistant. How can I help you shop sustainably today?";
-                    }
-                    setChatMessages((prev) => [...prev, { sender: "bot", text: reply }]);
-                    setIsTyping(false);
-                  }, 750);
+                  handleSendMessage(chatInput);
                 }} 
                 className="p-3 border-t border-emerald-500/10 bg-white flex gap-2"
               >
@@ -2395,12 +2501,14 @@ export default function App() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask Eco a question..."
-                  className="flex-1 bg-slate-50 border-2 border-slate-200/60 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-semibold"
+                  placeholder="Ask Eco a question or analyze a product..."
+                  disabled={isTyping}
+                  className="flex-1 bg-slate-50 border-2 border-slate-200/60 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center cursor-pointer hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/10 shrink-0"
+                  disabled={isTyping || !chatInput.trim()}
+                  className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center cursor-pointer hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/10 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </button>
