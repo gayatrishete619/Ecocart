@@ -1,5 +1,8 @@
 # 🌿 EcoCart — Detect. Analyze. Cart Sustainably.
 
+🌐 Live Demo: https://ecocart-two.vercel.app/  
+💻 GitHub: https://github.com/gayatrishete619/Ecocart
+
 [![Framework](https://img.shields.io/badge/Framework-React_18--Vite-61DAFB.svg?style=for-the-badge&logo=react)](https://react.dev)
 [![Backend](https://img.shields.io/badge/Backend-Express.js-000000.svg?style=for-the-badge&logo=express)](https://expressjs.com)
 [![Model](https://img.shields.io/badge/AI_Model-Gemini_3.5_Flash-4A90E2.svg?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
@@ -84,8 +87,8 @@ Get EcoCart running locally on your machine in under 2 minutes:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/AtharvCodingHub-888/ECOINTERCEPT-AI-GREENER-SHOPPING.git
-cd ECOINTERCEPT-AI-GREENER-SHOPPING
+git clone https://github.com/gayatrishete619/Ecocart.git
+cd Ecocart
 ```
 
 ### 2. Install Dependencies
